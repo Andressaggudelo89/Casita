@@ -12,10 +12,6 @@ import javax.swing.JFrame;
 import javax.swing.JPanel;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
-import java.io.BufferedReader;
-import java.io.FileNotFoundException;
-import java.io.FileReader;
-import java.io.IOException;
 
 /**
  *
@@ -42,6 +38,8 @@ public class KeyListenerExample extends JPanel implements KeyListener {
                     new Point(4,0), 
                     new Point(3,1)};
     
+    double mat[][] = new double[3][3];
+    
     public KeyListenerExample() {
         // El panel, por defecto no es "focusable". 
         // Hay que incluir estas líneas para que el panel pueda
@@ -54,7 +52,6 @@ public class KeyListenerExample extends JPanel implements KeyListener {
         @Override
     public void paintComponent(Graphics g) {
         super.paintComponent(g);
-        
         for (Point edge : edges) {
             g.drawLine(200+points[edge.x].x, 200+points[edge.x].y, 200+points[edge.y].x, 200+points[edge.y].y);
         }
@@ -70,51 +67,48 @@ public class KeyListenerExample extends JPanel implements KeyListener {
     public void keyReleased(KeyEvent e) {
         int tecla = e.getKeyCode();
         switch (tecla) {
+    // TRANSLATION:
             case KeyEvent.VK_D:
-                for (Point point : points) {
-                    point.x += 10;
-                }
+                mini(10, 0);
+                move();
                 break;
             case KeyEvent.VK_A:
-                for (Point point : points) {
-                    point.x -= 10;
-                }   
+                mini(-10, 0);
+                move();
                 break;
             case KeyEvent.VK_W:
-                for (Point point : points) {
-                    point.y -= 10;
-                }
+                mini(-10, 1);
+                move();
                 break;
             case KeyEvent.VK_S:
-                for (Point point : points) {
-                    point.y += 10;
-                }
+                mini(10, 1);
+                move();
                 break;
+    // SCALING:
             case KeyEvent.VK_Z: // Reduce image size.
-                for (Point point : points) {
-                    point.x *= 0.9;
-                    point.y *= 0.9;
-                }
+                fill();
+                double sx = 0.8, sy = 0.8;
+                mat[0][0] = sx;
+                mat[1][1] = sy;
+                mat[2][2] = 1;
+                move();
+                
                 break;
             case KeyEvent.VK_X: // Increase image size.
-                for (Point point : points) {
-                    point.x *= 1.1;
-                    point.y *= 1.1;
-                }
+                fill();
+                sx = 1.2; sy = 1.2;
+                mat[0][0] = sx;
+                mat[1][1] = sy;
+                mat[2][2] = 1;
+                move();
+                
                 break;
+    // ROTATION:
             case KeyEvent.VK_N: // Reduce image size.
-                int angle = 20;
-                for (Point point : points) {
-                    point.x = (int)(point.x*Math.cos(Math.toRadians(angle))-point.y*Math.sin(Math.toRadians(angle)));
-                    point.y = (int)(point.x*Math.sin(Math.toRadians(angle))+point.y*Math.cos(Math.toRadians(angle)));
-                }
+                rot_matrix(-45);
                 break;
             case KeyEvent.VK_M: // Increase image size.
-                angle = -20;
-                for (Point point : points) {
-                    point.x = (int)(point.x*Math.cos(Math.toRadians(angle))-point.y*Math.sin(Math.toRadians(angle)));
-                    point.y = (int)(point.x*Math.sin(Math.toRadians(angle))+point.y*Math.cos(Math.toRadians(angle)));
-                }
+                rot_matrix(45);
                 break;
             default:
                 break;
@@ -135,10 +129,6 @@ public class KeyListenerExample extends JPanel implements KeyListener {
     
     public static void main(String[] args) {
         KeyListenerExample kle = new KeyListenerExample();
-
-        
-        
-        
         // Create a new Frame
         JFrame frame = new JFrame("Ejemplo KeyListener");
         // Upon closing the frame, the application ends
@@ -153,4 +143,57 @@ public class KeyListenerExample extends JPanel implements KeyListener {
         // Show the frame
         frame.setVisible(true);
     }    
+
+    private void mini(int dx, int pos) {
+        fill();
+        for (int i = 0; i < 3; i++) {
+            mat[i][i] = 1;
+        }
+        mat[pos][2] = dx;
+    }
+    
+    private void move(){
+        int pt[][] = new int[3][1];
+        for (Point point : points) {
+            pt[0][0]= point.x;
+            pt[1][0]= point.y;
+            pt[2][0]=1;
+            pt = multiply(mat,pt);
+            point.x = pt[0][0];
+            point.y = pt[1][0];
+        }
+    }
+    
+    private void fill(){
+        for (int i = 0; i < 3; i++) {
+            for (int j = 0; j < 3; j++) {
+                mat[i][j] = 0;
+            }
+        }
+    }
+    
+    private int[][] multiply(double matrixA[][], int matrixB[][]){
+        int rowsA = matrixA.length;
+        int colsA = matrixA[0].length;
+        int colsB = matrixB[0].length;
+        
+        int[][] matrixC = new int [rowsA][colsB];
+
+        for (int i = 0; i < rowsA; i++) {
+            for(int j = 0; j < colsB; j++) {
+                for (int k = 0; k < colsA; k++) {
+                    matrixC[i][j] += matrixA[i][k] * matrixB[k][j];
+                }
+            }
+        }
+        return matrixC;
+    }
+    
+    private void rot_matrix(int angle){
+        mat[0][0] = Math.cos(angle);
+        mat[1][1] = Math.cos(angle);
+        mat[0][1] = -Math.sin(angle);
+        mat[1][0] = Math.sin(angle);
+        move();
+    }
 }
